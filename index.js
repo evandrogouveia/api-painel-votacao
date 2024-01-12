@@ -6,12 +6,12 @@ const cookieParser = require('cookie-parser');
 const dotenv = require('dotenv');
 const http = require('http').Server(app);
 //const io = require('socket.io')(http, {path:"/api-camara/socket.io" ,cors: { origins: ['*'] } });
-const io = require('socket.io')(http, {cors: { origins: ['*'] } });
+const io = require('socket.io')(http, { cors: { origins: ['*'] } });
 
 var cors = require('cors');
 dotenv.config();
 
-app.use(cors({origin: '*'}));
+app.use(cors({ origin: '*' }));
 
 io.on('connection', (socket) => {
     socket.on('standbyPainel', (dados) => {
@@ -34,9 +34,70 @@ io.on('connection', (socket) => {
         io.emit('dadosInscricao', dados);
     });
 
+    let countdownInterval;
+    let countdown;
+    let segundos;
+
     socket.on('timer', (dados) => {
-        io.emit('timer', dados);
+        console.log(dados)
+        if (countdownInterval) {
+            clearInterval(countdownInterval);
+        }
+       
+        if (dados.status === 'start') {
+            countdown = dados.minutes;
+            segundos = countdown * 60;
+            countdownInterval = startCountDownInterval();
+        }
+
+        if (dados.status === 'pause') {
+            clearInterval(countdownInterval);
+        }
+
+        if (dados.status === 'resume') {
+            countdown = segundos
+            countdownInterval = startCountDownInterval();
+        }
+
     });
+
+    
+
+    function startCountDownInterval() {
+        let contagemRegressiva = true;
+        let dataTimer;
+        
+        return setInterval(() => {
+            
+            const minutosRestantes = Math.floor(segundos / 60);
+            const segundosRestantes = segundos % 60;
+
+            if (minutosRestantes !== null && segundosRestantes !== null) {
+                if (contagemRegressiva) {
+                    dataTimer = { minutos: pad(minutosRestantes), segundos: pad(segundosRestantes), type: 'minus' }
+                    io.emit('timer', dataTimer);
+                } else {
+                    dataTimer = { minutos: pad(minutosRestantes), segundos: pad(segundosRestantes), type: 'plus' }
+                    io.emit('timer', dataTimer);
+                }
+            }
+
+            if (segundos === 0) {
+                if (contagemRegressiva) {
+                    contagemRegressiva = false;
+                } else {
+                    clearInterval(countdownInterval);
+                }
+            }
+
+            segundos += contagemRegressiva ? -1 : 1;
+
+        }, 1000);
+    }
+
+    function pad(val) {
+        return val > 9 ? val : '0' + val
+    }
 
     socket.on('quorum', (dados) => {
         io.emit('quorum', dados);
@@ -61,7 +122,6 @@ const router = require('./src/routes');
 
 app.use(router);
 
-//app.use('/api-camara', router);
 app.use('/', cors(), router);
 
 http.listen(port);

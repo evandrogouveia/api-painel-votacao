@@ -1,5 +1,4 @@
 const connectionsMultiples = require('../../database/connectionsMultiples');
-const authController = require('../../controllers/login/authController');
 
 module.exports = {
      async newConfiguracoes(req, res) {

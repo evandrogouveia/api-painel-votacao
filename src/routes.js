@@ -36,4 +36,4 @@ router.delete('/delete-configuracoes/:id', configuracoesController.deleteConfigu
 //obtem sessoes limitadas
 router.get('/all-session-limited', dadosCamaraController.getSessionsLimited);
 
-module.exports = router;
+module.exports = router
